@@ -62,8 +62,10 @@
     var socket = io();
     var x;
     var y;
-    var gameName = 'myGame1';
-    socket.emit('new game', gameName);
+    var data = {};
+    data.gameName = 'myGame1';
+    data.nickName = 'myname';
+    socket.emit('new game', data);
 
     socket.on('new game success', function (msg) {
         console.log(msg);

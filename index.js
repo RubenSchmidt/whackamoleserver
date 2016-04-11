@@ -53,23 +53,23 @@ io.on('connection', function(socket){
         socket.join(game.getName());
     });
 
-    socket.on('new game', function(name){
-        if(name.length<3){
+    socket.on('new game', function(data){
+        if(data.gameName.length<3){
             socket.emit('new game error', 'Game name not long enough');
             return;
         }
         // Check if game exists
-        var game = getGame(name);
+        var game = getGame(data.gameName);
         if (game !== null){
             socket.emit('new game error', 'Game with this name already exists');
             return;
         }
 
         var creatorId = socket.id;
-        game = new Game(name, creatorId);
+        game = new Game(data.gameName, data.nickName ,creatorId);
         games.push(game);
-        socket.join(name);
-        socket.emit('new game success', 'New game ' + name + ' was created.')
+        socket.join(data.gameName);
+        socket.emit('new game success', 'New game ' + data.gameName + ' was created.')
     });
 
     socket.on('start game', function () {

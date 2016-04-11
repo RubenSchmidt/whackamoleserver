@@ -13,12 +13,15 @@ var currentMole = {
     hit: true
 };
 // Constructor
-function Game(name, id) {
+function Game(name, nickname, id) {
     // always initialize all instance properties
     this.name = name;
     gameName = name;
     masterId = id;
-    attenders.push(new Attender(id, 0));
+    if(nickname !== null){
+        nickname = generateRandomNickName();
+    }
+    attenders.push(new Attender(id,nickname ,0));
 }
 // class methods
 Game.prototype.getName = function() {
@@ -51,7 +54,7 @@ Game.prototype.isFull = function ()
 
 Game.prototype.start = function()
 {
-    // Start game after 3 seconds
+    // Start game after 1 seconds
     setTimeout(sendNewMole, 1000);
 };
 
