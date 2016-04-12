@@ -17,6 +17,9 @@ var games = [];
 function getGame(name){
     for (var i = 0; i < games.length; i++) {
         var obj = games[i];
+        if (obj === null){
+            return null
+        }
         if(obj.getName() === name){
             return obj;
         }
