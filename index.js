@@ -27,6 +27,9 @@ function getGame(name){
 function getGameFromMasterId(masterId){
     for (var i = 0; i < games.length; i++) {
         var obj = games[i];
+        if (obj === null){
+            return null;
+        }
         var id = obj.getMasterId();
         if (id === masterId){
             return obj
