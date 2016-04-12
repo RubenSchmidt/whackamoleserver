@@ -9,6 +9,7 @@ var io = app.io;
 var attenders = [];
 var masterId;
 var gameName;
+var isStopped = false;
 var currentMole = {
     hit: true
 };
@@ -59,6 +60,10 @@ Game.prototype.start = function()
     setTimeout(sendNewMole, 1000);
 };
 
+Game.prototype.stop = function () {
+    isStopped = true;
+}
+
 Game.prototype.registerHit = function (socketId)
 {
     if (currentMole.hit === true){
@@ -76,6 +81,10 @@ Game.prototype.registerHit = function (socketId)
 
 function sendNewMole()
 {
+
+    if(isStopped === true){
+        return
+    }
     console.log("in send new mole");
     if(currentMole.hit === false){
         console.log("in hit false");
