@@ -94,6 +94,10 @@ io.on('connection', function(socket){
     socket.on('mole hit', function(gameName){
 
         var game = getGame(gameName);
+        if(game === null){
+            socket.emit('hit error', 'Game with that name does not exist')
+            return
+        }
         var hit = game.registerHit(socket.id);
         if(hit){
             socket.emit('hit success', 'You hit the mole first!')
