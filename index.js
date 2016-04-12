@@ -40,6 +40,7 @@ function deleteGame(game){
         var obj = games[i];
         if(game.getName() == obj.getName()){
             games[i] = null;
+            console.log("deleted");
         }
     }
 }
@@ -112,6 +113,7 @@ io.on('connection', function(socket){
         if (game !== null){
             game.stop();
             console.log("game stop");
+            deleteGame(game);
         }
 
     });
