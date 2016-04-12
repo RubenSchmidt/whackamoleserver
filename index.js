@@ -83,6 +83,7 @@ io.on('connection', function(socket){
     });
 
     socket.on('mole hit', function(gameName){
+
         var game = getGame(gameName);
         var hit = game.registerHit(socket.id);
         if(hit){
@@ -93,9 +94,11 @@ io.on('connection', function(socket){
     });
 
     socket.on('disconnect', function () {
+        console.log("disconect");
         var game = getGameFromMasterId(socket.id);
         if (game !== null){
             game.stop();
+            console.log("game stop");
         }
 
     });
