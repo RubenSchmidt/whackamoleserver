@@ -43,7 +43,7 @@ Game.prototype.start = function()
 {
     // Start game after 1 seconds
     console.log("start game in game");
-    setTimeout(this.sendNewMole.bind(this), 1000);
+    setTimeout(this.sendNewMole.bind(this), 500);
 };
 
 Game.prototype.stop = function () {
