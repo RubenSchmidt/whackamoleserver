@@ -18,7 +18,7 @@ function getGame(name) {
     for (var i = 0; i < games.length; i++) {
         var obj = games[i];
         if (obj !== null) {
-            if (obj.getName() === name) {
+            if (obj.name === name) {
                 return obj;
             }
         }
@@ -30,7 +30,7 @@ function getGameFromMasterId(masterId) {
     for (var i = 0; i < games.length; i++) {
         var obj = games[i];
         if (obj !== null) {
-            var id = obj.getMasterId();
+            var id = obj.masterId;
             if (id === masterId) {
                 return obj
             }
@@ -43,8 +43,9 @@ function deleteGame(game) {
     for (var i = 0; i < games.length; i++) {
         var obj = games[i];
         if (obj !== null) {
-            if (game.getName() == obj.getName()) {
+            if (game.name == obj.name) {
                 games[i] = null;
+                // Remove the game from the array
                 games.slice(i, 1);
                 console.log("deleted");
             }
@@ -67,7 +68,7 @@ io.on('connection', function (socket) {
 
         game.joinGame(socket.id, data.nickName);
         // Join the user socket to the room specific to the game so it receives game updates.
-        socket.join(game.getName());
+        socket.join(game.name);
     });
 
     socket.on('new game', function (data) {
@@ -103,7 +104,7 @@ io.on('connection', function (socket) {
 
         var game = getGame(gameName);
         if (game === null) {
-            socket.emit('hit error', 'Game with that name does not exist')
+            socket.emit('hit error', 'Game with that name does not exist');
             return
         }
         var hit = game.registerHit(socket.id);

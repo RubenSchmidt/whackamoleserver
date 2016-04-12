@@ -5,40 +5,25 @@ var app = require('../index.js');
 var Attender = require('./attender.js');
 var io = app.io;
 
-
-var attenders = [];
-var masterId;
-var gameName;
-var isStopped = false;
-var currentMole = {
-    hit: true
-};
 // Constructor
 function Game(name, nickname, id) {
     // always initialize all instance properties
     this.name = name;
-    gameName = name;
-    masterId = id;
-    this.isStopped = isStopped;
-    if(nickname !== null){
-        nickname = generateRandomNickName();
+    this.attenders =[];
+    this.pos = getRandomInt(0,8);
+    this.pic = getRandomInt(0,5);
+    this.hit = false;
+
+    this.masterId = id;
+    this.isStopped = false;
+    if(nickname == null){
+        this.nickname = generateRandomNickName();
+    }else{
+        this.nickname = nickname;
     }
-    attenders.push(new Attender(id,nickname ,0));
+    this.attenders.push(new Attender(id,nickname ,0));
 }
-// class methods
-Game.prototype.getName = function() {
-    return this.name;
-};
 
-Game.prototype.getNuberOfAttenders = function ()
-{
-    return  attenders.length;
-};
-
-Game.prototype.getMasterId = function ()
-{
-    return masterId;
-};
 
 Game.prototype.joinGame = function (socketId, nickName)
 {
@@ -46,61 +31,64 @@ Game.prototype.joinGame = function (socketId, nickName)
         nickName = generateRandomNickName();
     }
     var attender = new Attender(socketId, nickName, 0);
-    attenders.push(attender);
+    this.attenders.push(attender);
 };
 
 Game.prototype.isFull = function ()
 {
-    return attenders.length > 5
+    return this.attenders.length > 5
 };
 
 Game.prototype.start = function()
 {
     // Start game after 1 seconds
     console.log("start game in game");
-    sendNewMole()
+    this.sendNewMole()
 };
 
 Game.prototype.stop = function () {
-    isStopped = true;
-}
+    this.isStopped = true;
+};
 
 Game.prototype.registerHit = function (socketId)
 {
-    if (currentMole.hit === true){
+    if (this.hit){
         return false;
     }
-    for (var i = 0; i < attenders.length; i++) {
-        var attender = attenders[i];
+    console.log(this.attenders.length);
+    for (var i = 0; i < this.attenders.length; i++) {
+        var attender = this.attenders[i];
         if (attender.id === socketId){
             attender.points += 1;
-            currentMole.hit = true;
+            this.hit = true;
             return true;
         }
     }
 };
 
-function sendNewMole()
-{
 
-    if(isStopped === true){
+Game.prototype.sendNewMole = function(){
+    if(this.isStopped === true){
         return
     }
     console.log("in send new mole");
-    if(currentMole.hit === false){
+    if(this.hit === false){
         console.log("in hit false");
-        setTimeout(sendNewMole, 500);
+        setTimeout(this.sendNewMole.bind(this), 500);
         return;
     }
-    currentMole = {
-        pos: getRandomInt(0,8),
-        pic: getRandomInt(0,5),
-        hit: false
+    this.pos = getRandomInt(0, 8);
+    this.pic = getRandomInt(0, 5);
+    this.hit = false;
+    var obj = {
+        pos: this.pos,
+        pic: this.pic,
+        hit: this.hit
     };
-    console.log(currentMole);
-    io.to(gameName).emit('new mole', currentMole);
-    setTimeout(sendNewMole, 500);
-}
+    console.log(obj);
+    io.to(this.name).emit('new mole', obj);
+    setTimeout(this.sendNewMole.bind(this), 500);
+};
 
 function generateRandomNickName()
 {
