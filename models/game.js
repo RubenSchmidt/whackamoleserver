@@ -55,6 +55,7 @@ Game.prototype.isFull = function ()
 Game.prototype.start = function()
 {
     // Start game after 1 seconds
+    console.log("start game in game");
     setTimeout(sendNewMole, 1000);
 };
 
@@ -75,7 +76,9 @@ Game.prototype.registerHit = function (socketId)
 
 function sendNewMole()
 {
+    console.log("in send new mole");
     if(currentMole.hit === false){
+        console.log("in hit false");
         setTimeout(sendNewMole, 500);
         return;
     }

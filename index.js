@@ -78,6 +78,7 @@ io.on('connection', function(socket){
             socket.emit('start game error', 'You are not the master of any game')
         }
         game.start();
+        console.log("Game start");
         socket.emit('start game success', 'New game started, get ready!')
     });
 
