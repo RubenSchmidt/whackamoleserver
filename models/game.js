@@ -19,6 +19,7 @@ function Game(name, nickname, id) {
     this.name = name;
     gameName = name;
     masterId = id;
+    this.isStopped = isStopped;
     if(nickname !== null){
         nickname = generateRandomNickName();
     }

@@ -35,6 +35,15 @@ function getGameFromMasterId(masterId){
     return null;
 }
 
+function deleteGame(game){
+    for (var i = 0; i < games.length; i++) {
+        var obj = games[i];
+        if(game.getName() == obj.getName()){
+            games[i] = null;
+        }
+    }
+}
+
 io.on('connection', function(socket){
 
     socket.on('join game', function (data) {
