@@ -12,7 +12,7 @@ function Game(name, nickname, id) {
     this.attenders =[];
     this.pos = getRandomInt(0,8);
     this.pic = getRandomInt(0,5);
-    this.hit = false;
+    this.hit = true;
 
     this.masterId = id;
     this.isStopped = false;
