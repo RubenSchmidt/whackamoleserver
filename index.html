@@ -64,7 +64,6 @@
     var y;
     var data = {};
     data.gameName = 'myGame1';
-    data.nickName = 'myname';
     socket.emit('new game', data);
 
     socket.on('new game success', function (msg) {
