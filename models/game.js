@@ -6,9 +6,11 @@ var Attender = require('./attender.js');
 var io = app.io;
 
 // Constructor
-function Game(name, nickname, id) {
+function Game(name, nickname, numOfPlayers, id) {
     // always initialize all instance properties
     this.name = name;
+    this.numOfPlayers = numOfPlayers;
+    this.scoreWeights = [300, 200, 100, 50, 20, 10];
     this.attenders =[];
     this.pos = getRandomInt(0,8);
     this.pic = getRandomInt(0,5);
@@ -39,18 +41,59 @@ Game.prototype.isFull = function ()
     return this.attenders.length > 5
 };
 
+Game.prototype.setAttenderReady = function(nickName) {
+    for(var attender in this.attenders) {
+        if(attender.nickName === nickName) {
+            attender.ready = true;
+        }
+    }
+    console.log(this.getNumOfReadyAttenders() + " of " + this.attenders.length + " attenders are ready.");
+}
+
+Game.prototype.getNumOfReadyAttenders = function() {
+    var ready = 0;
+    for(var attender in this.attenders) {
+        if(attender.ready === true) {
+            ready += 1;
+        }
+    }
+    return ready;
+}
+
+Game.prototype.gameIsReady = function() {
+    var ready = this.getNumOfReadyAttenders();
+    // Checks if at least the half part of the attenders has reported "ready"
+    if(this.numOfPlayers > 2 && (ready > this.attenders.length / 2)) {
+        return true;
+    }
+    
+    // START: TEMPRORARY FOR TESTING
+    else if(this.numOfPlayers === 1 && ready === 1) {
+        return true;
+    }
+    //END
+    
+    else if(this.numOfPlayers === 2 && ready === 2) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 Game.prototype.start = function()
 {
     // Start game after 1 seconds
-    console.log("start game in game");
     setTimeout(this.sendNewMole.bind(this), 500);
 };
+
 
 Game.prototype.stop = function () {
     this.isStopped = true;
 };
 
-Game.prototype.registerHit = function (socketId)
+
+Game.prototype.registerHit = function (socketId, mole)
 {
     if (this.hit){
         return false;
@@ -59,7 +102,7 @@ Game.prototype.registerHit = function (socketId)
     for (var i = 0; i < this.attenders.length; i++) {
         var attender = this.attenders[i];
         if (attender.id === socketId){
-            attender.points += 1;
+            attender.points += this.scoreWeights[mole];
             this.hit = true;
             return true;
         }
@@ -71,9 +114,7 @@ Game.prototype.sendNewMole = function(){
     if(this.isStopped === true){
         return
     }
-    console.log("in send new mole");
     if(this.hit === false){
-        console.log("in hit false");
         setTimeout(this.sendNewMole.bind(this), 500);
         return;
     }
@@ -89,6 +130,15 @@ Game.prototype.sendNewMole = function(){
     io.to(this.name).emit('new mole', obj);
     setTimeout(this.sendNewMole.bind(this), 500);
 };
+
+Game.prototype.getAttender = function(socketId) {
+    for(var attender in this.attenders) {
+        if(attender.id === socketId){
+            return attender;
+        }
+    }
+}
+  
 
 function generateRandomNickName()
 {

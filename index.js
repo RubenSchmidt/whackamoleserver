@@ -47,7 +47,8 @@ function deleteGame(game) {
                 games[i] = null;
                 // Remove the game from the array
                 games.slice(i, 1);
-                console.log("deleted");
+                console.log("Deleted");
+                console.log("");
             }
         }
     }
@@ -69,6 +70,20 @@ io.on('connection', function (socket) {
         game.joinGame(socket.id, data.nickName);
         // Join the user socket to the room specific to the game so it receives game updates.
         socket.join(game.name);
+        // Emit an array of attenders in JSON format to all clients in this game
+        io.to(game.name).emit('players', JSON.stringify(game.attenders));
+    });
+    
+    socket.on('ready', function(data) {
+         var game = getGame(data.gameName);
+         var nickName = data.nickName;
+         game.setAttenderReady(nickName);
+        
+         if(game.gameIsReady) {
+            game.start();
+            console.log("Game start");
+            io.to(game.name).emit('start game success', 'New game started, get ready!')
+         }
     });
 
     socket.on('new game', function (data) {
@@ -84,9 +99,10 @@ io.on('connection', function (socket) {
         }
 
         var creatorId = socket.id;
-        game = new Game(data.gameName, data.nickName, creatorId);
+        game = new Game(data.gameName, data.nickName, data.numOfPlayers, creatorId);
         games.push(game);
         socket.join(data.gameName);
+        console.log("Game created: " + data.gameName);
         socket.emit('new game success', 'New game ' + data.gameName + ' was created.')
     });
 
@@ -100,27 +116,32 @@ io.on('connection', function (socket) {
         socket.emit('start game success', 'New game started, get ready!')
     });
 
-    socket.on('mole hit', function (gameName) {
-
-        var game = getGame(gameName);
+    socket.on('mole hit', function (data) {
+        console.log("Mole " + data.mole + " hit on " + data.gameName);
+        var game = getGame(data.gameName);
+        var mole = data.mole;
         if (game === null) {
             socket.emit('hit error', 'Game with that name does not exist');
             return
         }
-        var hit = game.registerHit(socket.id);
+        //TODO: SOMETHING WRONG WITH REGISTER HIT??
+        var hit = game.registerHit(socket.id, mole);
+        
         if (hit) {
             socket.emit('hit success', 'You hit the mole first!')
         } else {
             socket.emit('hit miss', 'You were not first')
         }
+        
+        socket.emit('player score', JSON.stringify(game.getAttender(socket.id)));
     });
 
     socket.on('disconnect', function () {
-        console.log("disconect");
+        console.log("Disconnect");
         var game = getGameFromMasterId(socket.id);
         if (game !== null) {
             game.stop();
-            console.log("game stop");
+            console.log("Game stop");
             deleteGame(game);
         }
     });

@@ -7,6 +7,7 @@ function Attender(id, nickName ,points) {
     this.id = id;
     this.points = points;
     this.nickName = nickName;
+    this.ready = false;
 }
 // class methods
 //Game.prototype.getId = function() {
