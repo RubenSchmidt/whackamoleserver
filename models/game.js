@@ -34,20 +34,22 @@ Game.prototype.joinGame = function (socketId, nickName)
     }
     var attender = new Attender(socketId, nickName, 0);
     this.attenders.push(attender);
+    return attender;
 };
 
 Game.prototype.isFull = function ()
 {
-    return this.attenders.length > 5
+    return this.attenders.length >= this.numOfPlayers;
 };
 
 Game.prototype.setAttenderReady = function(nickName) {
     for(var attender in this.attenders) {
         if(attender.nickName === nickName) {
             attender.ready = true;
+            return attender;
+            console.log(this.getNumOfReadyAttenders() + " of " + this.attenders.length + " attenders are ready.");
         }
     }
-    console.log(this.getNumOfReadyAttenders() + " of " + this.attenders.length + " attenders are ready.");
 }
 
 Game.prototype.getNumOfReadyAttenders = function() {
@@ -67,11 +69,11 @@ Game.prototype.gameIsReady = function() {
         return true;
     }
     
-    // START: TEMPRORARY FOR TESTING
+    // START TESTING: Temporary code for testing. Normally one player shouldn't be able to play alone.
     else if(this.numOfPlayers === 1 && ready === 1) {
         return true;
     }
-    //END
+    //END TESTING
     
     else if(this.numOfPlayers === 2 && ready === 2) {
         return true;
@@ -96,15 +98,25 @@ Game.prototype.stop = function () {
 Game.prototype.registerHit = function (socketId, mole)
 {
     if (this.hit){
-        return false;
+        return player = {
+            nickName: "",
+            points: 0,
+            totalScore: 0,
+            hit: false
+        };
     }
-    console.log(this.attenders.length);
     for (var i = 0; i < this.attenders.length; i++) {
         var attender = this.attenders[i];
         if (attender.id === socketId){
-            attender.points += this.scoreWeights[mole];
+            var points = this.scoreWeights[mole];
+            attender.points += points;
             this.hit = true;
-            return true;
+            return player = {
+                nickName: attender.nickName,
+                points: points,
+                totalScore: attender.points,
+                hit: true
+            };
         }
     }
 };
@@ -126,7 +138,6 @@ Game.prototype.sendNewMole = function(){
         pic: this.pic,
         hit: this.hit
     };
-    console.log(obj);
     io.to(this.name).emit('new mole', obj);
     setTimeout(this.sendNewMole.bind(this), 500);
 };
