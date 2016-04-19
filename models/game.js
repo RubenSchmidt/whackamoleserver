@@ -6,15 +6,17 @@ var Attender = require('./attender.js');
 var io = app.io;
 
 // Constructor
-function Game(name, nickname, numOfPlayers, id) {
+function Game(name, nickname, numOfPlayers, id, themeId) {
     // always initialize all instance properties
     this.name = name;
     this.numOfPlayers = numOfPlayers;
+    this.themeId = themeId;
     this.scoreWeights = [300, 200, 100, 50, 20, 10];
     this.attenders =[];
-    this.pos = getRandomInt(0,8);
-    this.pic = getRandomInt(0,5);
+    this.pos = getRandomInt(0, 8);
+    this.pic = getRandomInt(0, 5);
     this.hit = true;
+    this.lastTimeSent = 0;
 
     this.masterId = id;
     this.isStopped = false;
@@ -25,7 +27,6 @@ function Game(name, nickname, numOfPlayers, id) {
     }
     this.attenders.push(new Attender(id,nickname ,0));
 }
-
 
 Game.prototype.joinGame = function (socketId, nickName)
 {
@@ -42,20 +43,25 @@ Game.prototype.isFull = function ()
     return this.attenders.length >= this.numOfPlayers;
 };
 
-Game.prototype.setAttenderReady = function(nickName) {
-    for(var attender in this.attenders) {
-        if(attender.nickName === nickName) {
+Game.prototype.setAttenderReady = function(socketId) {
+    JSON.stringify(this.attenders); //TEST
+    for(i = 0; i < this.attenders.length; i++) {
+        var attender = this.attenders[i];
+        console.log("Attender in setAttenderReady: " + attender);
+        console.log("socketId to be compared in setAttenderReady: " + socketId);
+        if(attender.id === socketId) {
             attender.ready = true;
+            
             return attender;
-            console.log(this.getNumOfReadyAttenders() + " of " + this.attenders.length + " attenders are ready.");
         }
     }
+    return null;
 }
 
 Game.prototype.getNumOfReadyAttenders = function() {
     var ready = 0;
-    for(var attender in this.attenders) {
-        if(attender.ready === true) {
+    for(i = 0; i < this.attenders.length; i++) {
+        if(this.attenders[i].ready === true) {
             ready += 1;
         }
     }
@@ -64,6 +70,7 @@ Game.prototype.getNumOfReadyAttenders = function() {
 
 Game.prototype.gameIsReady = function() {
     var ready = this.getNumOfReadyAttenders();
+    console.log(this.getNumOfReadyAttenders() + " of " + this.attenders.length + " attenders are ready.");
     // Checks if at least the half part of the attenders has reported "ready"
     if(this.numOfPlayers > 2 && (ready > this.attenders.length / 2)) {
         return true;
@@ -86,7 +93,7 @@ Game.prototype.gameIsReady = function() {
 Game.prototype.start = function()
 {
     // Start game after 1 seconds
-    setTimeout(this.sendNewMole.bind(this), 500);
+    setTimeout(this.sendNewMole.bind(this), 2000);
 };
 
 
@@ -124,12 +131,21 @@ Game.prototype.registerHit = function (socketId, mole)
 
 Game.prototype.sendNewMole = function(){
     if(this.isStopped === true){
-        return
+        return;
     }
-    if(this.hit === false){
+    var timeDiffSinceLastSend = Math.floor(new Date().getTime()/1000) - this.lastTimeSent;
+    // Waits with sending a new mole until hit or two seconds have passed.
+    if(this.hit === false && (timeDiffSinceLastSend < 4)){
         setTimeout(this.sendNewMole.bind(this), 500);
         return;
     }
+    else {
+        this.send();
+        setTimeout(this.sendNewMole.bind(this), 500);
+    }
+};
+
+Game.prototype.send = function() {
     this.pos = getRandomInt(0, 8);
     this.pic = getRandomInt(0, 5);
     this.hit = false;
@@ -139,15 +155,27 @@ Game.prototype.sendNewMole = function(){
         hit: this.hit
     };
     io.to(this.name).emit('new mole', obj);
-    setTimeout(this.sendNewMole.bind(this), 500);
-};
+    this.lastTimeSent = Math.floor(new Date().getTime()/1000);
+    console.log('Mole is sent');
+}
 
 Game.prototype.getAttender = function(socketId) {
-    for(var attender in this.attenders) {
+    for(i = 0; i < this.attenders.length; i++) {
+        var attender = this.attenders[i];
         if(attender.id === socketId){
             return attender;
         }
     }
+}
+
+Game.prototype.nickNameTaken = function(nickName) {
+    for(i = 0; i < this.attenders.length; i++) {
+        var attender = this.attenders[i];
+        if(attender.nickName === nickName) {
+            return true;
+        }
+    }
+    return false;
 }
   
 

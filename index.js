@@ -59,33 +59,52 @@ io.on('connection', function (socket) {
     socket.on('join game', function (data) {
         var game = getGame(data.gameName);
         if (game === null) {
-            socket.emit('game nonexistent error', 'Game does not exist!');
-            console.log("player attempted to join, but game didnt exist");
+            socket.emit('game nonexistent', 'Game does not exist!');
+            console.log("Player attempted to join, but game didnt exist.");
             return;
         }
         if (game.isFull()) {
-            socket.emit('game is full error', 'Game is full!');
-            console.log("player attempted to join, but game was full");
+            socket.emit('game is full', 'Game is full!');
+            console.log("Player attempted to join, but game was full.");
             return;
+        }
+        if(game.nickNameTaken(data.nickName)) {
+            obj = {
+                nickName: data.nickName
+            }
+            // Nickname is taken, and that nickname i sent back to the client if needed
+            socket.emit('nickName taken', obj);
+            console.log("Player attempted to join, but nickname was taken.")
         }
 
         var attender = game.joinGame(socket.id, data.nickName);
         // Join the user socket to the room specific to the game so it receives game updates.
         socket.join(game.name);
         // Emit an array of attenders in JSON format to all clients in this game
-        socket.emit('join game success', 'Player ' + data.nickName + ' joined ' + data.gameName + '.');
-        // Notify all players, except for the sender, that a new player joined.
+        console.log('Player ' + attender.nickName + ' joined game ' + game.name);
+        socket.emit('join game success', JSON.stringify(game));
         socket.broadcast.to(game.name).emit('player joined', attender);
+        
     });
+    
+    
+    //TEST
+    io.on('ready to join', function(data) {
+        // Notify all players, except for the sender, that a new player joined.
+        var game = getGame(data.gameName);
+        socket.emit('join game done', JSON.stringify(game.attenders));
+        
+    });
+    //---------
     
     socket.on('ready', function(data) {
          var game = getGame(data.gameName);
          var nickName = data.nickName;
-         var attender = game.setAttenderReady(nickName);
+         var attender = game.setAttenderReady(socket.id);
         
          // Notify all players, except sender, that a player is ready. 
          socket.broadcast.to(game.name).emit('player ready', attender);
-         if(game.gameIsReady) {
+         if(game.gameIsReady()) {
             game.start();
             console.log("Game start");
             // Notify all players that the game starts
@@ -122,8 +141,9 @@ io.on('connection', function (socket) {
         }
 
         var creatorId = socket.id;
-        game = new Game(data.gameName, data.nickName, data.numOfPlayers, creatorId);
+        game = new Game(data.gameName, data.nickName, data.numOfPlayers, creatorId, data.themeId);
         games.push(game);
+        console.log("Created game: " + data.gameName + ", " + data.nickName + ", " + data.numOfPlayers);
         socket.join(data.gameName);
         console.log("Game created: " + data.gameName);
         socket.emit('new game success', 'New game ' + data.gameName + ' was created.')
