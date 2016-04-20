@@ -11,7 +11,8 @@ function Game(name, nickname, numOfPlayers, id, themeId) {
     this.name = name;
     this.numOfPlayers = numOfPlayers;
     this.themeId = themeId;
-    this.scoreWeights = [300, 200, 100, 50, 20, 10];
+    this.scoreWeights = [500, 400, 300, 200, 100, 50];
+    this.maxScore = 3000;
     this.attenders =[];
     this.pos = getRandomInt(0, 8);
     this.pic = getRandomInt(0, 5);
@@ -70,9 +71,9 @@ Game.prototype.getNumOfReadyAttenders = function() {
 
 Game.prototype.gameIsReady = function() {
     var ready = this.getNumOfReadyAttenders();
-    console.log(this.getNumOfReadyAttenders() + " of " + this.attenders.length + " attenders are ready.");
+    console.log(this.getNumOfReadyAttenders() + " of " + this.attenders.length + " attenders are ready. Game requires " + this.numOfPlayers + " players.");
     // Checks if at least the half part of the attenders has reported "ready"
-    if(this.numOfPlayers > 2 && (ready > this.attenders.length / 2)) {
+    if(this.numOfPlayers > 2 && (ready > this.numOfPlayers/2)) {
         return true;
     }
     
@@ -93,7 +94,7 @@ Game.prototype.gameIsReady = function() {
 Game.prototype.start = function()
 {
     // Start game after 1 seconds
-    setTimeout(this.sendNewMole.bind(this), 2000);
+    setTimeout(this.sendNewMole.bind(this), 1000);
 };
 
 
@@ -101,9 +102,17 @@ Game.prototype.stop = function () {
     this.isStopped = true;
 };
 
+Game.prototype.gameIsFinished = function(){
+    for(i = 0; i < this.attenders.length; i++) {
+        if(this.attenders[i].points >= this.maxScore) {
+            return true;
+        }
+    }
+    return false;
+}
 
-Game.prototype.registerHit = function (socketId, mole)
-{
+
+Game.prototype.registerHit = function (socketId, mole) {
     if (this.hit){
         return player = {
             nickName: "",
@@ -132,6 +141,11 @@ Game.prototype.registerHit = function (socketId, mole)
 Game.prototype.sendNewMole = function(){
     if(this.isStopped === true){
         return;
+    }
+    if(this.gameIsFinished()) {
+        io.to(this.name).emit('game finished', JSON.stringify(this.attenders));  
+        this.stop();
+        //TODO: more cleanup??
     }
     var timeDiffSinceLastSend = Math.floor(new Date().getTime()/1000) - this.lastTimeSent;
     // Waits with sending a new mole until hit or two seconds have passed.
@@ -172,6 +186,17 @@ Game.prototype.nickNameTaken = function(nickName) {
     for(i = 0; i < this.attenders.length; i++) {
         var attender = this.attenders[i];
         if(attender.nickName === nickName) {
+            return true;
+        }
+    }
+    return false;
+}
+
+Game.prototype.removeAttender = function(socketId) {
+    for(i = 0; i < this.attenders.length; i++) {
+        var attender = this.attenders[i];
+        if(attender.id === socketId) {
+            this.attenders.splice(i, 1);
             return true;
         }
     }

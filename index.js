@@ -26,6 +26,20 @@ function getGame(name) {
     return null;
 }
 
+function getGameFromId(socketId) {
+    for (var i = 0; i < games.length; i++) {
+        var game = games[i];
+        if(game !== null) {
+            for(var j = 0; j < game.attenders.length; j++) {
+                if(game.attenders[j].id === socketId) {
+                    return game;
+                }
+            }
+        }
+    }
+    return null;
+}
+
 function getGameFromMasterId(masterId) {
     for (var i = 0; i < games.length; i++) {
         var obj = games[i];
@@ -151,11 +165,15 @@ io.on('connection', function (socket) {
     
     socket.on('disconnect', function () {
         console.log("Disconnect");
-        var game = getGameFromMasterId(socket.id);
-        if (game !== null) {
-            game.stop();
-            console.log("Game stop");
-            deleteGame(game);
+        var game = getGameFromId(socket.id);
+        if(game !== null) {
+             if(game.removeAttender(socket.id)) {
+                 if(game.attenders.length === 0) {
+                     game.stop();
+                     console.log("Game stop. All attenders left.");
+                     deleteGame(game);
+                 }
+             }
         }
     });
 
