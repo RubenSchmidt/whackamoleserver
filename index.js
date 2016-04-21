@@ -12,10 +12,12 @@ app.get('/', function (req, res) {
 http.listen(port, function () {
     console.log('listening on *:' + port);
 });
+
+// The list of games
 var games = [];
 
 function getGame(name) {
-    for (var i = 0; i < games.length; i++) {
+    for (i = 0; i < games.length; i++) {
         var obj = games[i];
         if (obj !== null) {
             if (obj.name === name) {
@@ -27,7 +29,7 @@ function getGame(name) {
 }
 
 function getGameFromId(socketId) {
-    for (var i = 0; i < games.length; i++) {
+    for(i = 0; i < games.length; i++) {
         var game = games[i];
         if(game !== null) {
             for(var j = 0; j < game.attenders.length; j++) {
@@ -57,10 +59,12 @@ function deleteGame(game) {
     for (var i = 0; i < games.length; i++) {
         var obj = games[i];
         if (obj !== null) {
-            if (game.name == obj.name) {
-                games[i] = null;
+            if (game.name === obj.name) {
+                // games[i] = null;
                 // Remove the game from the array
+                console.log("Game list before: " + games);
                 games.slice(i, 1);
+                console.log("Game list after delete: " + games);
                 console.log("Deleted");
                 console.log("");
             }
@@ -87,8 +91,9 @@ io.on('connection', function (socket) {
                 nickName: data.nickName
             }
             // Nickname is taken, and that nickname i sent back to the client if needed
-            socket.emit('nickName taken', obj);
-            console.log("Player attempted to join, but nickname was taken.")
+            socket.emit('nickname taken', obj);
+            console.log("Player attempted to join, but nickname was taken.");
+            return;
         }
 
         var attender = game.joinGame(socket.id, data.nickName);
@@ -122,7 +127,7 @@ io.on('connection', function (socket) {
             game.start();
             console.log("Game start");
             // Notify all players that the game starts
-            io.to(game.name).emit('start game success', 'New game started, get ready!')
+            io.to(game.name).emit('start game success', 'New game started, get ready!');
          }
     });
     
@@ -159,7 +164,6 @@ io.on('connection', function (socket) {
         games.push(game);
         console.log("Created game: " + data.gameName + ", " + data.nickName + ", " + data.numOfPlayers);
         socket.join(data.gameName);
-        console.log("Game created: " + data.gameName);
         socket.emit('new game success', 'New game ' + data.gameName + ' was created.')
     });
     

@@ -12,7 +12,7 @@ function Game(name, nickname, numOfPlayers, id, themeId) {
     this.numOfPlayers = numOfPlayers;
     this.themeId = themeId;
     this.scoreWeights = [500, 400, 300, 200, 100, 50];
-    this.maxScore = 3000;
+    this.maxScore = 5000;
     this.attenders =[];
     this.pos = getRandomInt(0, 8);
     this.pic = getRandomInt(0, 5);
@@ -26,7 +26,8 @@ function Game(name, nickname, numOfPlayers, id, themeId) {
     }else{
         this.nickname = nickname;
     }
-    this.attenders.push(new Attender(id,nickname ,0));
+    this.attenders.push(new Attender(id, nickname, 0));
+    console.log("New game have master user: " + this.attenders[0].nickName);
 }
 
 Game.prototype.joinGame = function (socketId, nickName)
@@ -52,7 +53,6 @@ Game.prototype.setAttenderReady = function(socketId) {
         console.log("socketId to be compared in setAttenderReady: " + socketId);
         if(attender.id === socketId) {
             attender.ready = true;
-            
             return attender;
         }
     }
