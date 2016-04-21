@@ -177,19 +177,5 @@ io.on('connection', function (socket) {
         }
     });
 
-    
-    
-    // THIS ONE IS CURRENTLY NOT IN USE BY THE APP. SWITCHED TO USING on('ready')
-    socket.on('start game', function () {
-        var game = getGameFromMasterId(socket.id);
-        if (game === null) {
-            socket.emit('start game error', 'You are not the master of any game')
-        }
-        game.start();
-        console.log("Game start");
-        socket.emit('start game success', 'New game started, get ready!')
-    });
-    // -------
-
    
 });
