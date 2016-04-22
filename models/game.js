@@ -12,8 +12,8 @@ function Game(name, nickname, numOfPlayers, id, themeId) {
     this.numOfPlayers = numOfPlayers;
     this.themeId = themeId;
     this.scoreWeights = [500, 400, 300, 200, 100, 50];
-    this.maxScore = 3000;
-    this.attenders =[];
+    this.maxScore = 2000;
+    this.attenders = [];
     this.pos = getRandomInt(0, 8);
     this.pic = getRandomInt(0, 5);
     this.hit = true;
@@ -69,7 +69,6 @@ Game.prototype.getNumOfReadyAttenders = function() {
 
 Game.prototype.gameIsReady = function() {
     var ready = this.getNumOfReadyAttenders();
-    console.log(this.getNumOfReadyAttenders() + " of " + this.attenders.length + " attenders are ready. Game requires " + this.numOfPlayers + " players.");
     // Checks if at least the half part of the attenders has reported "ready"
     if(this.numOfPlayers > 2 && (ready > this.numOfPlayers/2)) {
         return true;
@@ -143,7 +142,6 @@ Game.prototype.sendNewMole = function(){
     if(this.gameIsFinished()) {
         io.to(this.name).emit('game finished', JSON.stringify(this.attenders));  
         this.stop();
-        //TODO: more cleanup??
     }
     var timeDiffSinceLastSend = Math.floor(new Date().getTime()/1000) - this.lastTimeSent;
     // Waits with sending a new mole until hit or two seconds have passed.
@@ -195,6 +193,7 @@ Game.prototype.removeAttender = function(socketId) {
         var attender = this.attenders[i];
         if(attender.id === socketId) {
             this.attenders.splice(i, 1);
+            console.log("Removed attender: " + attender.nickName);
             return true;
         }
     }

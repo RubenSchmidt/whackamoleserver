@@ -5,15 +5,20 @@ module.exports.io = io;
 var port = process.env.PORT || 5000;
 var Game = require('./models/game.js');
 
+
+// Routing for the test client
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/index.html');
 });
+
+
+// WHACKAMOLE SERVER ------
 
 http.listen(port, function () {
     console.log('listening on *:' + port);
 });
 
-// The list of games
+// The list of all the currently ongoing games
 var games = [];
 
 function getGame(name) {
@@ -75,7 +80,9 @@ function checkIfGameEmpty(game) {
         game.stop();
         console.log("Game stop. All attenders left from game " + game.name + ".");
         deleteGame(game);
+        return true;
     }
+    return false;
 }
 
 
@@ -85,8 +92,6 @@ function deleteGame(game) {
         var obj = games[i];
         if(obj !== null) {
             if(game === obj) {
-                // games[i] = null;
-                // Remove the game from the array
                 var gameName = game.name;
                 games.splice(i, 1);
                 console.log("Deleted game " + gameName + ".");
@@ -97,42 +102,56 @@ function deleteGame(game) {
     }
 }
 
+
 io.on('connection', function (socket) {
 
-    
     socket.on('new game', function (data) {
         if (data.gameName.length < 3) {
             socket.emit('game name length error', 'Game name not long enough');
             return;
         }
-        // Check if game exists
+        // Check if game exists - null if not
         var game = getGame(data.gameName);
         if (game !== null) {
             socket.emit('game already exists error', 'Game with this name already exists');
+            
+            // Log error
             console.log("Player attempted to create a game, but game name was taken.");
             console.log("Aborted create game request.");
+            
             return;
         }
 
         var creatorId = socket.id;
         game = new Game(data.gameName, data.nickName, data.numOfPlayers, creatorId, data.themeId);
         games.push(game);
-        console.log("Created game: " + data.gameName + ", " + data.nickName + ", " + data.numOfPlayers);
+        
+        // Joins the socket id to the newly created game room (should leave on game finish)
         socket.join(data.gameName);
-        socket.emit('new game success', 'New game ' + data.gameName + ' was created.')
+        
+        // Emit success
+        socket.emit('new game success', JSON.stringify(game));
+        
+        // Log success
+        console.log("Created game: " + data.gameName + ", " + data.nickName + ", " + data.numOfPlayers);
+        
     });
     
     
     socket.on('join game', function (data) {
         var game = getGame(data.gameName);
         if (game === null) {
-            socket.emit('game nonexistent', 'Game does not exist!');
+            socket.emit('game nonexistent error', 'Game does not exist!');
+            
+            // Log error
             console.log("Player attempted to join, but game didnt exist.");
             console.log("Aborted join request.");
             return;
         }
         if (game.isFull()) {
-            socket.emit('game is full', 'Game is full!');
+            socket.emit('game is full error', 'Game is full.');
+            
+            // Log error
             console.log("Player attempted to join, but game was full.");
             console.log("Aborted join request.");
             return;
@@ -141,20 +160,26 @@ io.on('connection', function (socket) {
             obj = {
                 nickName: data.nickName
             }
-            // Nickname is taken, and that nickname i sent back to the client if needed
-            socket.emit('nickname taken', obj);
+            socket.emit('nickname taken error', obj);
+            
+            // Log error
             console.log("Player attempted to join, but nickname was taken.");
             console.log("Aborted join request.");
             return;
         }
 
+        // Player is added to the game and socket is joined to game room
         var attender = game.joinGame(socket.id, data.nickName);
-        // Join the user socket to the room specific to the game so it receives game updates.
         socket.join(game.name);
-        // Emit an array of attenders in JSON format to all clients in this game
-        console.log('Player ' + attender.nickName + ' joined game ' + game.name);
+    
+        // Emit success
         socket.emit('join game success', JSON.stringify(game));
+        
+        // Emit an array of attenders in JSON format to all clients in this game, except sender.
         socket.broadcast.to(game.name).emit('player joined', attender);
+        
+        // Log success
+        console.log('Player ' + attender.nickName + ' joined game ' + game.name);
         
     });
     
@@ -162,27 +187,35 @@ io.on('connection', function (socket) {
     
     socket.on('left game', function(data) {
         var game = getGameFromId(socket.id);
-        if(game != null) {
-            var attender = game.getAttender(socket.id);
-        }
-        console.log("Player " + attender.nickName + " left the game " + game.name);
-        if(game.removeAttender(socket.id)) {
-            /*socket.broadcast.to(game.name).emit('player left', attender);
-            */
-            checkIfGameEmpty(game);
+        var attender;
+        if(game !== null) {
+            attender = game.getAttender(socket.id);
+            
+            if(game.removeAttender(socket.id)) {
+                // Log client leave
+                console.log("Player " + attender.nickName + " left the game named " + game.name);
+                
+                // Leave client from game room
+                socket.leave(game.name);
+
+                // Check if game is now empty and should be disposed, if not notify clients on leave.
+                if(!checkIfGameEmpty(game)) {
+                    socket.broadcast.to(game.name).emit('player left', attender);
+                }
+            }
         }
     });
     
     
     
-
+    /*
     socket.on('ready to join', function(data) {
         // Notify all players, except for the sender, that a new player joined.
         var game = getGame(data.gameName);
         socket.emit('join game done', JSON.stringify(game.attenders));
         
     });
-  
+    */
     
     
     socket.on('ready', function(data) {
@@ -192,6 +225,8 @@ io.on('connection', function (socket) {
         
          // Notify all players, except sender, that a player is ready. 
          socket.broadcast.to(game.name).emit('player ready', attender);
+         console.log(nickName + " is ready.");
+         console.log(game.getNumOfReadyAttenders() + " of " + game.attenders.length + " are ready, and " + game.numOfPlayers + " players are required.");
          if(game.gameIsReady()) {
             game.start();
             console.log("Game start");
@@ -217,17 +252,28 @@ io.on('connection', function (socket) {
             io.to(game.name).emit('player hit', player);
         }
     });
-
     
     
     socket.on('disconnect', function () {
-        console.log("Disconnect");
         var game = getGameFromId(socket.id);
         if(game !== null) {
+             var attender = game.getAttender(socket.id);
              if(game.removeAttender(socket.id)) {
+                 if(attender !== null && game.attenders.length !== 0) {
+                     socket.broadcast.to(game.name).emit('player left', attender);
+                 }
+                 // Check if all players are gone and game should be disposed
                  checkIfGameEmpty(game);
              }
         }
+        
+        // Log disconnecion
+        console.log("Client disconnected.");
+    });
+    
+    
+    socket.on('error', function() {
+        console.log('A socket error occured');    
     });
 
    
