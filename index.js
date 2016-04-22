@@ -55,17 +55,42 @@ function getGameFromMasterId(masterId) {
     return null;
 }
 
+function getNickNameFromId(socketId) {
+    for(i = 0; i < games.length; i++) {
+        var game = games[i];
+        if(game !== null) {
+            for(var j = 0; j < game.attenders.length; j++) {
+                if(game.attenders[j].id === socketId) {
+                    return game.attenders[j].nickName;
+                }
+            }
+        }
+    }
+    return null;
+}
+
+
+function checkIfGameEmpty(game) {
+    if(game.attenders.length === 0) {
+        game.stop();
+        console.log("Game stop. All attenders left from game " + game.name + ".");
+        deleteGame(game);
+    }
+}
+
+
+
 function deleteGame(game) {
-    for (var i = 0; i < games.length; i++) {
+    for(var i = 0; i < games.length; i++) {
         var obj = games[i];
-        if (obj !== null) {
-            if (game.name === obj.name) {
+        if(obj !== null) {
+            if(game === obj) {
                 // games[i] = null;
                 // Remove the game from the array
-                console.log("Game list before: " + games);
-                games.slice(i, 1);
-                console.log("Game list after delete: " + games);
-                console.log("Deleted");
+                var gameName = game.name;
+                games.splice(i, 1);
+                console.log("Deleted game " + gameName + ".");
+                console.log(games.length + " games left.");
                 console.log("");
             }
         }
@@ -74,16 +99,42 @@ function deleteGame(game) {
 
 io.on('connection', function (socket) {
 
+    
+    socket.on('new game', function (data) {
+        if (data.gameName.length < 3) {
+            socket.emit('game name length error', 'Game name not long enough');
+            return;
+        }
+        // Check if game exists
+        var game = getGame(data.gameName);
+        if (game !== null) {
+            socket.emit('game already exists error', 'Game with this name already exists');
+            console.log("Player attempted to create a game, but game name was taken.");
+            console.log("Aborted create game request.");
+            return;
+        }
+
+        var creatorId = socket.id;
+        game = new Game(data.gameName, data.nickName, data.numOfPlayers, creatorId, data.themeId);
+        games.push(game);
+        console.log("Created game: " + data.gameName + ", " + data.nickName + ", " + data.numOfPlayers);
+        socket.join(data.gameName);
+        socket.emit('new game success', 'New game ' + data.gameName + ' was created.')
+    });
+    
+    
     socket.on('join game', function (data) {
         var game = getGame(data.gameName);
         if (game === null) {
             socket.emit('game nonexistent', 'Game does not exist!');
             console.log("Player attempted to join, but game didnt exist.");
+            console.log("Aborted join request.");
             return;
         }
         if (game.isFull()) {
             socket.emit('game is full', 'Game is full!');
             console.log("Player attempted to join, but game was full.");
+            console.log("Aborted join request.");
             return;
         }
         if(game.nickNameTaken(data.nickName)) {
@@ -93,6 +144,7 @@ io.on('connection', function (socket) {
             // Nickname is taken, and that nickname i sent back to the client if needed
             socket.emit('nickname taken', obj);
             console.log("Player attempted to join, but nickname was taken.");
+            console.log("Aborted join request.");
             return;
         }
 
@@ -107,14 +159,31 @@ io.on('connection', function (socket) {
     });
     
     
-    //TEST
-    io.on('ready to join', function(data) {
+    
+    socket.on('left game', function(data) {
+        var game = getGameFromId(socket.id);
+        if(game != null) {
+            var attender = game.getAttender(socket.id);
+        }
+        console.log("Player " + attender.nickName + " left the game " + game.name);
+        if(game.removeAttender(socket.id)) {
+            /*socket.broadcast.to(game.name).emit('player left', attender);
+            */
+            checkIfGameEmpty(game);
+        }
+    });
+    
+    
+    
+
+    socket.on('ready to join', function(data) {
         // Notify all players, except for the sender, that a new player joined.
         var game = getGame(data.gameName);
         socket.emit('join game done', JSON.stringify(game.attenders));
         
     });
-    //---------
+  
+    
     
     socket.on('ready', function(data) {
          var game = getGame(data.gameName);
@@ -130,6 +199,8 @@ io.on('connection', function (socket) {
             io.to(game.name).emit('start game success', 'New game started, get ready!');
          }
     });
+    
+    
     
     socket.on('mole hit', function (data) {
         console.log("Mole " + data.mole + " hit on " + data.gameName);
@@ -147,36 +218,14 @@ io.on('connection', function (socket) {
         }
     });
 
-    socket.on('new game', function (data) {
-        if (data.gameName.length < 3) {
-            socket.emit('game name length error', 'Game name not long enough');
-            return;
-        }
-        // Check if game exists
-        var game = getGame(data.gameName);
-        if (game !== null) {
-            socket.emit('game already exists error', 'Game with this name already exists');
-            return;
-        }
-
-        var creatorId = socket.id;
-        game = new Game(data.gameName, data.nickName, data.numOfPlayers, creatorId, data.themeId);
-        games.push(game);
-        console.log("Created game: " + data.gameName + ", " + data.nickName + ", " + data.numOfPlayers);
-        socket.join(data.gameName);
-        socket.emit('new game success', 'New game ' + data.gameName + ' was created.')
-    });
+    
     
     socket.on('disconnect', function () {
         console.log("Disconnect");
         var game = getGameFromId(socket.id);
         if(game !== null) {
              if(game.removeAttender(socket.id)) {
-                 if(game.attenders.length === 0) {
-                     game.stop();
-                     console.log("Game stop. All attenders left.");
-                     deleteGame(game);
-                 }
+                 checkIfGameEmpty(game);
              }
         }
     });

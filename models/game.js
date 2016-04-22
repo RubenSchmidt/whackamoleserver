@@ -12,7 +12,7 @@ function Game(name, nickname, numOfPlayers, id, themeId) {
     this.numOfPlayers = numOfPlayers;
     this.themeId = themeId;
     this.scoreWeights = [500, 400, 300, 200, 100, 50];
-    this.maxScore = 5000;
+    this.maxScore = 3000;
     this.attenders =[];
     this.pos = getRandomInt(0, 8);
     this.pic = getRandomInt(0, 5);
@@ -49,8 +49,6 @@ Game.prototype.setAttenderReady = function(socketId) {
     JSON.stringify(this.attenders); //TEST
     for(i = 0; i < this.attenders.length; i++) {
         var attender = this.attenders[i];
-        console.log("Attender in setAttenderReady: " + attender);
-        console.log("socketId to be compared in setAttenderReady: " + socketId);
         if(attender.id === socketId) {
             attender.ready = true;
             return attender;
