@@ -147,12 +147,12 @@ Game.prototype.sendNewMole = function(){
     var timeDiffSinceLastSend = Math.floor(new Date().getTime()/1000) - this.lastTimeSent;
     // Waits with sending a new mole until hit or two seconds have passed.
     if(this.hit === false && (timeDiffSinceLastSend < 4)){
-        setTimeout(this.sendNewMole.bind(this), 500);
+        setTimeout(this.sendNewMole.bind(this), 300);
         return;
     }
     else {
         this.send();
-        setTimeout(this.sendNewMole.bind(this), 500);
+        setTimeout(this.sendNewMole.bind(this), 300);
     }
 };
 

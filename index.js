@@ -193,7 +193,6 @@ io.on('connection', function (socket) {
         var attender = game.joinGame(socket.id, data.nickName);
         socket.join(game.name);
     
-        // Emit success
         socket.emit('join game success', JSON.stringify(game));
         
         // Emit an array of attenders in JSON format to all clients in this game, except sender.
