@@ -10,8 +10,12 @@ function Attender(id, nickName ,points) {
     this.ready = false;
 }
 // class methods
-//Game.prototype.getId = function() {
-//    return this.id;
-//};
+
+Attender.prototype.toString = function() {
+    return this.nickName;
+}
+
+
+
 
 module.exports = Attender;

@@ -103,11 +103,24 @@ function deleteGame(game) {
 }
 
 
-io.on('connection', function (socket) {
+io.on('connect', function() {
+    console.log("Client connected.");
+});
 
+
+io.on('connection', function (socket) {
+    
     socket.on('new game', function (data) {
-        if (data.gameName.length < 3) {
-            socket.emit('game name length error', 'Game name not long enough');
+        if (data.gameName === null || data.gameName.length < 3) {
+            socket.emit('invalid game name error', 'Game name not long enough.');
+            return;
+        }
+        if (data.nickName === null | data.gameName.length < 3) {
+            socket.emit('invalid nickname error', 'Nickname was to short or not provided.');
+            
+            // Log error
+            console.log("Player attempted to create with nickname that was invalid.");
+            console.log("Aborted create game request.");
             return;
         }
         // Check if game exists - null if not
@@ -140,6 +153,14 @@ io.on('connection', function (socket) {
     
     socket.on('join game', function (data) {
         var game = getGame(data.gameName);
+        if(data.nickName === null || data.nickName.length < 3) {
+            socket.emit('invalid nickname error', 'Nickname was to short or not provided.');
+            
+            // Log error
+            console.log("Player attempted to join with nickname that was invalid.");
+            console.log("Aborted join request.");
+            return;
+        }
         if (game === null) {
             socket.emit('game nonexistent error', 'Game does not exist!');
             
@@ -167,7 +188,7 @@ io.on('connection', function (socket) {
             console.log("Aborted join request.");
             return;
         }
-
+        
         // Player is added to the game and socket is joined to game room
         var attender = game.joinGame(socket.id, data.nickName);
         socket.join(game.name);
@@ -205,17 +226,6 @@ io.on('connection', function (socket) {
             }
         }
     });
-    
-    
-    
-    /*
-    socket.on('ready to join', function(data) {
-        // Notify all players, except for the sender, that a new player joined.
-        var game = getGame(data.gameName);
-        socket.emit('join game done', JSON.stringify(game.attenders));
-        
-    });
-    */
     
     
     socket.on('ready', function(data) {
@@ -258,6 +268,8 @@ io.on('connection', function (socket) {
         var game = getGameFromId(socket.id);
         if(game !== null) {
              var attender = game.getAttender(socket.id);
+             // Log disconnecion
+             console.log("Client disconnected.");
              if(game.removeAttender(socket.id)) {
                  if(attender !== null && game.attenders.length !== 0) {
                      socket.broadcast.to(game.name).emit('player left', attender);
@@ -266,15 +278,13 @@ io.on('connection', function (socket) {
                  checkIfGameEmpty(game);
              }
         }
-        
-        // Log disconnecion
-        console.log("Client disconnected.");
     });
     
-    
+    /*
     socket.on('error', function() {
-        console.log('A socket error occured');    
+        // Log error
+        console.log("A socket error occured.");
     });
-
+    */
    
 });

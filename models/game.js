@@ -12,7 +12,7 @@ function Game(name, nickname, numOfPlayers, id, themeId) {
     this.numOfPlayers = numOfPlayers;
     this.themeId = themeId;
     this.scoreWeights = [500, 400, 300, 200, 100, 50];
-    this.maxScore = 2000;
+    this.maxScore = 5000;
     this.attenders = [];
     this.pos = getRandomInt(0, 8);
     this.pic = getRandomInt(0, 5);
@@ -27,7 +27,7 @@ function Game(name, nickname, numOfPlayers, id, themeId) {
         this.nickname = nickname;
     }
     this.attenders.push(new Attender(id, nickname, 0));
-    console.log("New game have master user: " + this.attenders[0].nickName);
+    console.log("New game have master user: " + this.nickname);
 }
 
 Game.prototype.joinGame = function (socketId, nickName)
@@ -70,7 +70,8 @@ Game.prototype.getNumOfReadyAttenders = function() {
 Game.prototype.gameIsReady = function() {
     var ready = this.getNumOfReadyAttenders();
     // Checks if at least the half part of the attenders has reported "ready"
-    if(this.numOfPlayers > 2 && (ready > this.numOfPlayers/2)) {
+    if(this.numOfPlayers > 2 && this.attenders.length
+       === this.numOfPlayers && (ready > this.numOfPlayers/2)) {
         return true;
     }
     
@@ -91,7 +92,7 @@ Game.prototype.gameIsReady = function() {
 Game.prototype.start = function()
 {
     // Start game after 1 seconds
-    setTimeout(this.sendNewMole.bind(this), 1000);
+    setTimeout(this.sendNewMole.bind(this), 4000);
 };
 
 
